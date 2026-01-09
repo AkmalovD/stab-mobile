@@ -1,14 +1,14 @@
-import { useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import React, { useRef, useState } from 'react';
 import { Alert, Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../auth/AuthContext';
 import Button from '../components/ui/Button';
 import Checkbox from '../components/ui/Checkbox';
 import Input from '../components/ui/Input';
-import SocialButton from '../components/ui/SocialButton';
 import { loginSchema } from '../validators/loginSchema';
 import { registerSchema } from '../validators/registerSchema';
-import { Stack } from "expo-router";
+import AntDesign from '@expo/vector-icons/AntDesign';
+import Entypo from '@expo/vector-icons/Entypo';
 
 export default function LoginScreen() {
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
@@ -195,25 +195,27 @@ export default function LoginScreen() {
       {/* Form Card */}
       <View style={styles.formCard}>
         {/* Tabs */}
-        <View style={styles.tabs}>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'login' && styles.tabActive]}
-            onPress={() => handleTabSwitch('login')}
-            disabled={isLoading}
-          >
-            <Text style={[styles.tabText, activeTab === 'login' && styles.tabTextActive]}>
-              Log In
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'signup' && styles.tabActive]}
-            onPress={() => handleTabSwitch('signup')}
-            disabled={isLoading}
-          >
-            <Text style={[styles.tabText, activeTab === 'signup' && styles.tabTextActive]}>
-              Sign Up
-            </Text>
-          </TouchableOpacity>
+        <View style={styles.tabsContainer}>
+          <View style={styles.tabs}>
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 'login' && styles.tabActive]}
+              onPress={() => handleTabSwitch('login')}
+              disabled={isLoading}
+            >
+              <Text style={[styles.tabText, activeTab === 'login' && styles.tabTextActive]}>
+                Log In
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 'signup' && styles.tabActive]}
+              onPress={() => handleTabSwitch('signup')}
+              disabled={isLoading}
+            >
+              <Text style={[styles.tabText, activeTab === 'signup' && styles.tabTextActive]}>
+                Sign Up
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Form Fields with Animation */}
@@ -230,7 +232,7 @@ export default function LoginScreen() {
             <>
               <Input
                 label="Email"
-                placeholder="Loisbecket@gmail.com"
+                placeholder="examplet@mail.com"
                 value={email}
                 onChangeText={(text) => {
                   setEmail(text);
@@ -355,17 +357,25 @@ export default function LoginScreen() {
           </View>
 
           {/* Social Auth Buttons */}
-          <SocialButton
-            provider="google"
-            onPress={handleGoogleAuth}
-            disabled={isLoading}
-          />
+          <View style={styles.socialButtonsRow}>
+            <TouchableOpacity
+              style={[styles.socialButton, styles.googleButton, isLoading && styles.socialButtonDisabled]}
+              onPress={handleGoogleAuth}
+              disabled={isLoading}
+              activeOpacity={0.8}
+            >
+              <AntDesign name="google" size={24} color="black" />
+            </TouchableOpacity>
 
-          <SocialButton
-            provider="facebook"
-            onPress={handleFacebookAuth}
-            disabled={isLoading}
-          />
+            <TouchableOpacity
+              style={[styles.socialButton, styles.facebookButton, isLoading && styles.socialButtonDisabled]}
+              onPress={handleFacebookAuth}
+              disabled={isLoading}
+              activeOpacity={0.8}
+            >
+              <Entypo name="facebook" size={24} color="blue" />
+            </TouchableOpacity>
+          </View>
         </Animated.View>
       </View>
     </ScrollView>
@@ -425,34 +435,48 @@ const styles = StyleSheet.create({
   formCard: {
     flex: 1,
     backgroundColor: '#f3f4f6',
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     paddingTop: 8,
     paddingHorizontal: 24,
   },
-  tabs: {
-    flexDirection: 'row',
+  tabsContainer: {
     marginBottom: 24,
     marginTop: 16,
   },
+  tabs: {
+    flexDirection: 'row',
+    backgroundColor: '#e5e7eb',
+    borderRadius: 15,
+    padding: 3,
+    gap: 4,
+  },
   tab: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 14,
     alignItems: 'center',
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
+    justifyContent: 'center',
+    borderRadius: 15,
   },
   tabActive: {
-    borderBottomColor: '#0d98ba',
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
   },
   tabText: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#6b7280',
+    color: '#9ca3af',
   },
   tabTextActive: {
     color: '#1f2937',
-    fontWeight: '600',
+    fontWeight: '700',
   },
   form: {
     marginTop: 8,
@@ -470,6 +494,7 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     marginBottom: 20,
+    backgroundColor: '#0d98ba'
   },
   divider: {
     flexDirection: 'row',
@@ -485,5 +510,74 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     fontSize: 14,
     color: '#6b7280',
+  },
+  socialButtonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 16,
+    marginBottom: 20,
+  },
+  socialButton: {
+    width: 60,
+    height: 60,
+    borderRadius: 12,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  socialButtonDisabled: {
+    opacity: 0.6,
+  },
+  googleButton: {
+    backgroundColor: '#fff',
+  },
+  facebookButton: {
+    backgroundColor: '#fff',
+  },
+  googleIconContainer: {
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  googleIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#fff',
+    borderWidth: 2.5,
+    borderColor: '#4285f4',
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  googleGContainer: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  googleG: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#4285f4',
+    lineHeight: 22,
+  },
+  facebookIcon: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#fff',
+    fontFamily: 'Arial',
   },
 });
