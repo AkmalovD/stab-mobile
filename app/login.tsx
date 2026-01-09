@@ -1,20 +1,46 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
+import React, { useRef, useState } from 'react';
+import { Alert, Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../auth/AuthContext';
+import Button from '../components/ui/Button';
+import Checkbox from '../components/ui/Checkbox';
+import Input from '../components/ui/Input';
+import SocialButton from '../components/ui/SocialButton';
 import { loginSchema } from '../validators/loginSchema';
+import { registerSchema } from '../validators/registerSchema';
+import { Stack } from "expo-router";
 
 export default function LoginScreen() {
+  const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
+  
+  // Login state
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  
+  // Sign up state
+  const [name, setName] = useState('');
+  const [signUpEmail, setSignUpEmail] = useState('');
+  const [signUpPassword, setSignUpPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [signUpErrors, setSignUpErrors] = useState<{ 
+    name?: string; 
+    email?: string; 
+    password?: string;
+    confirmPassword?: string;
+  }>({});
+  
   const [isLoading, setIsLoading] = useState(false);
 
-  const { login } = useAuth();
+  const { login, register } = useAuth();
   const router = useRouter();
+  
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const slideAnim = useRef(new Animated.Value(0)).current;
 
-  const validateForm = (): boolean => {
+  const validateLoginForm = (): boolean => {
     const result = loginSchema.safeParse({
       email,
       password,
@@ -35,8 +61,32 @@ export default function LoginScreen() {
     return false;
   };
 
-  const handleSubmit = async () => {
-    if (!validateForm()) {
+  const validateSignUpForm = (): boolean => {
+    const result = registerSchema.safeParse({
+      name,
+      email: signUpEmail,
+      password: signUpPassword,
+      confirmPassword
+    });
+
+    if (result.success) {
+      setSignUpErrors({});
+      return true;
+    }
+
+    const fieldErrors = result.error.flatten().fieldErrors;
+    setSignUpErrors({
+      name: fieldErrors.name?.[0],
+      email: fieldErrors.email?.[0],
+      password: fieldErrors.password?.[0],
+      confirmPassword: fieldErrors.confirmPassword?.[0],
+    });
+
+    return false;
+  };
+
+  const handleLoginSubmit = async () => {
+    if (!validateLoginForm()) {
       return;
     }
 
@@ -55,162 +105,357 @@ export default function LoginScreen() {
         setErrors({ password: result.error });
       }
     } else {
-      Alert.alert('Успешно', 'Вход выполнен успешно!');
+      Alert.alert('Success', 'Login successful!');
       router.replace('/');
     }
   };
 
+  const handleSignUpSubmit = async () => {
+    if (!validateSignUpForm()) {
+      return;
+    }
+
+    setIsLoading(true);
+
+    const result = await register(name, signUpEmail, signUpPassword);
+
+    setIsLoading(false);
+
+    if (result.error) {
+      if (result.error.includes('email')) {
+        setSignUpErrors({ email: result.error });
+      } else {
+        Alert.alert('Error', result.error);
+      }
+    } else {
+      Alert.alert('Success', 'Registration successful!');
+      router.replace('/');
+    }
+  };
+
+  const handleGoogleAuth = () => {
+    Alert.alert('Coming Soon', `Google ${activeTab === 'login' ? 'sign-in' : 'sign-up'} will be available soon!`);
+  };
+
+  const handleFacebookAuth = () => {
+    Alert.alert('Coming Soon', `Facebook ${activeTab === 'login' ? 'sign-in' : 'sign-up'} will be available soon!`);
+  };
+
+  const handleTabSwitch = (tab: 'login' | 'signup') => {
+    if (tab === activeTab) return;
+    
+    // Animate out
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: tab === 'signup' ? -50 : 50,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setActiveTab(tab);
+      
+      // Animate in
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    });
+  };
+
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Welcome Back</Text>
-          <Text style={styles.subtitle}>Sign in to continue your study abroad journey</Text>
+    <>
+    <Stack.Screen options={{ headerShown: false }} />
+    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+      {/* Header Section */}
+      <View style={styles.header}>
+        <View style={styles.logoContainer}>
+          <View style={styles.logoIcon}>
+            <Text style={styles.logoText}>S</Text>
+          </View>
+          <Text style={styles.logoName}>STAB</Text>
         </View>
+        
+        <Text style={styles.title}>Get Started now</Text>
+        <Text style={styles.subtitle}>Create an account or log in to explore about our app</Text>
+      </View>
 
-        <View style={styles.form}>
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Email Address</Text>
-            <TextInput
-              style={[styles.input, errors.email && styles.inputError]}
-              placeholder="you@example.com"
-              value={email}
-              onChangeText={(text) => {
-                setEmail(text);
-                if (errors.email) setErrors({ ...errors, email: undefined });
-              }}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              editable={!isLoading}
-            />
-            {errors.email && (
-              <Text style={styles.errorText}>{errors.email}</Text>
-            )}
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Password</Text>
-            <TextInput
-              style={[styles.input, errors.password && styles.inputError]}
-              placeholder="••••••••"
-              value={password}
-              onChangeText={(text) => {
-                setPassword(text);
-                if (errors.password) setErrors({ ...errors, password: undefined });
-              }}
-              secureTextEntry
-              editable={!isLoading}
-            />
-            {errors.password && (
-              <Text style={styles.errorText}>{errors.password}</Text>
-            )}
-          </View>
-
-          <View style={styles.optionsRow}>
-            <TouchableOpacity
-              style={styles.checkboxRow}
-              onPress={() => setRememberMe(!rememberMe)}
-              disabled={isLoading}
-            >
-              <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
-                {rememberMe && <Text style={styles.checkmark}>✓</Text>}
-              </View>
-              <Text style={styles.checkboxLabel}>Remember me</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => router.push('/reset-password' as any)}
-              disabled={isLoading}
-            >
-              <Text style={styles.forgotLink}>Forgot password?</Text>
-            </TouchableOpacity>
-          </View>
-
+      {/* Form Card */}
+      <View style={styles.formCard}>
+        {/* Tabs */}
+        <View style={styles.tabs}>
           <TouchableOpacity
-            style={[styles.submitButton, isLoading && styles.submitButtonDisabled]}
-            onPress={handleSubmit}
+            style={[styles.tab, activeTab === 'login' && styles.tabActive]}
+            onPress={() => handleTabSwitch('login')}
             disabled={isLoading}
           >
-            {isLoading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.submitButtonText}>Sign In</Text>
-            )}
+            <Text style={[styles.tabText, activeTab === 'login' && styles.tabTextActive]}>
+              Log In
+            </Text>
           </TouchableOpacity>
-
-          <View style={styles.signupPrompt}>
-            <Text style={styles.signupText}>Don&apos;t have an account? </Text>
-            <TouchableOpacity
-              onPress={() => router.push('/sign-up' as any)}
-              disabled={isLoading}
-            >
-              <Text style={styles.signupLink}>Sign up</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'signup' && styles.tabActive]}
+            onPress={() => handleTabSwitch('signup')}
+            disabled={isLoading}
+          >
+            <Text style={[styles.tabText, activeTab === 'signup' && styles.tabTextActive]}>
+              Sign Up
+            </Text>
+          </TouchableOpacity>
         </View>
+
+        {/* Form Fields with Animation */}
+        <Animated.View 
+          style={[
+            styles.form,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateX: slideAnim }],
+            },
+          ]}
+        >
+          {activeTab === 'login' ? (
+            <>
+              <Input
+                label="Email"
+                placeholder="Loisbecket@gmail.com"
+                value={email}
+                onChangeText={(text) => {
+                  setEmail(text);
+                  if (errors.email) setErrors({ ...errors, email: undefined });
+                }}
+                error={errors.email}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                editable={!isLoading}
+              />
+
+              <Input
+                label="Password"
+                placeholder="••••••••"
+                value={password}
+                onChangeText={(text) => {
+                  setPassword(text);
+                  if (errors.password) setErrors({ ...errors, password: undefined });
+                }}
+                error={errors.password}
+                isPassword
+                editable={!isLoading}
+              />
+
+              {/* Options Row */}
+              <View style={styles.optionsRow}>
+                <Checkbox
+                  checked={rememberMe}
+                  onPress={() => setRememberMe(!rememberMe)}
+                  label="Remember me"
+                  disabled={isLoading}
+                />
+
+                <TouchableOpacity
+                  onPress={() => router.push('/reset-password' as any)}
+                  disabled={isLoading}
+                >
+                  <Text style={styles.forgotLink}>Forgot Password ?</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Login Button */}
+              <Button
+                title="Log In"
+                onPress={handleLoginSubmit}
+                loading={isLoading}
+                disabled={isLoading}
+                style={styles.submitButton}
+              />
+            </>
+          ) : (
+            <>
+              <Input
+                label="Name"
+                placeholder="John Doe"
+                value={name}
+                onChangeText={(text) => {
+                  setName(text);
+                  if (signUpErrors.name) setSignUpErrors({ ...signUpErrors, name: undefined });
+                }}
+                error={signUpErrors.name}
+                editable={!isLoading}
+                autoCapitalize="words"
+              />
+
+              <Input
+                label="Email"
+                placeholder="Loisbecket@gmail.com"
+                value={signUpEmail}
+                onChangeText={(text) => {
+                  setSignUpEmail(text);
+                  if (signUpErrors.email) setSignUpErrors({ ...signUpErrors, email: undefined });
+                }}
+                error={signUpErrors.email}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                editable={!isLoading}
+              />
+
+              <Input
+                label="Password"
+                placeholder="••••••••"
+                value={signUpPassword}
+                onChangeText={(text) => {
+                  setSignUpPassword(text);
+                  if (signUpErrors.password) setSignUpErrors({ ...signUpErrors, password: undefined });
+                }}
+                error={signUpErrors.password}
+                isPassword
+                editable={!isLoading}
+              />
+
+              <Input
+                label="Confirm Password"
+                placeholder="••••••••"
+                value={confirmPassword}
+                onChangeText={(text) => {
+                  setConfirmPassword(text);
+                  if (signUpErrors.confirmPassword) setSignUpErrors({ ...signUpErrors, confirmPassword: undefined });
+                }}
+                error={signUpErrors.confirmPassword}
+                isPassword
+                editable={!isLoading}
+              />
+
+              {/* Sign Up Button */}
+              <Button
+                title="Sign Up"
+                onPress={handleSignUpSubmit}
+                loading={isLoading}
+                disabled={isLoading}
+                style={styles.submitButton}
+              />
+            </>
+          )}
+
+          {/* Divider */}
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>Or</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          {/* Social Auth Buttons */}
+          <SocialButton
+            provider="google"
+            onPress={handleGoogleAuth}
+            disabled={isLoading}
+          />
+
+          <SocialButton
+            provider="facebook"
+            onPress={handleFacebookAuth}
+            disabled={isLoading}
+          />
+        </Animated.View>
       </View>
     </ScrollView>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#0d98ba',
   },
-  content: {
-    padding: 20,
-    paddingTop: 40,
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 30,
   },
   header: {
+    paddingTop: 60,
+    paddingHorizontal: 24,
+    paddingBottom: 40,
+  },
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 32,
   },
-  title: {
-    fontSize: 32,
+  logoIcon: {
+    width: 32,
+    height: 32,
+    backgroundColor: '#fff',
+    borderRadius: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  logoText: {
+    fontSize: 18,
     fontWeight: 'bold',
-    color: '#0d171b',
+    color: '#0d98ba',
+  },
+  logoName: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#fff',
     marginBottom: 8,
-    textAlign: 'center',
   },
   subtitle: {
+    fontSize: 14,
+    color: '#fff',
+    lineHeight: 20,
+  },
+  formCard: {
+    flex: 1,
+    backgroundColor: '#f3f4f6',
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    paddingTop: 8,
+    paddingHorizontal: 24,
+  },
+  tabs: {
+    flexDirection: 'row',
+    marginBottom: 24,
+    marginTop: 16,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  tabActive: {
+    borderBottomColor: '#0d98ba',
+  },
+  tabText: {
     fontSize: 16,
-    color: '#4c809a',
-    textAlign: 'center',
+    fontWeight: '500',
+    color: '#6b7280',
+  },
+  tabTextActive: {
+    color: '#1f2937',
+    fontWeight: '600',
   },
   form: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  inputGroup: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#4c809a',
-    marginBottom: 8,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    color: '#0d171b',
-  },
-  inputError: {
-    borderColor: '#ef4444',
-  },
-  errorText: {
-    color: '#ef4444',
-    fontSize: 12,
-    marginTop: 4,
+    marginTop: 8,
   },
   optionsRow: {
     flexDirection: 'row',
@@ -218,65 +463,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 24,
   },
-  checkboxRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderWidth: 2,
-    borderColor: '#d1d5db',
-    borderRadius: 4,
-    marginRight: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  checkboxChecked: {
-    backgroundColor: '#0d98ba',
-    borderColor: '#0d98ba',
-  },
-  checkmark: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  checkboxLabel: {
-    fontSize: 14,
-    color: '#4c809a',
-  },
   forgotLink: {
     fontSize: 14,
     color: '#0d98ba',
-    fontWeight: '600',
+    fontWeight: '500',
   },
   submitButton: {
-    backgroundColor: '#0d98ba',
-    borderRadius: 8,
-    padding: 14,
-    alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
   },
-  submitButtonDisabled: {
-    opacity: 0.6,
-  },
-  submitButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  signupPrompt: {
+  divider: {
     flexDirection: 'row',
-    justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 20,
   },
-  signupText: {
-    fontSize: 14,
-    color: '#4c809a',
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#d1d5db',
   },
-  signupLink: {
+  dividerText: {
+    marginHorizontal: 16,
     fontSize: 14,
-    color: '#0d98ba',
-    fontWeight: '600',
+    color: '#6b7280',
   },
 });
