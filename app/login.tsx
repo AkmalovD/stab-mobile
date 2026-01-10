@@ -1,3 +1,5 @@
+import AntDesign from '@expo/vector-icons/AntDesign';
+import Entypo from '@expo/vector-icons/Entypo';
 import { Stack, useRouter } from 'expo-router';
 import React, { useRef, useState } from 'react';
 import { Alert, Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -7,8 +9,6 @@ import Checkbox from '../components/ui/Checkbox';
 import Input from '../components/ui/Input';
 import { loginSchema } from '../validators/loginSchema';
 import { registerSchema } from '../validators/registerSchema';
-import AntDesign from '@expo/vector-icons/AntDesign';
-import Entypo from '@expo/vector-icons/Entypo';
 
 export default function LoginScreen() {
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
@@ -39,6 +39,8 @@ export default function LoginScreen() {
   // Animation values
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
+  const tabIndicatorAnim = useRef(new Animated.Value(0)).current;
+  const tabWidth = useRef(0);
 
   const validateLoginForm = (): boolean => {
     const result = loginSchema.safeParse({
@@ -144,6 +146,14 @@ export default function LoginScreen() {
   const handleTabSwitch = (tab: 'login' | 'signup') => {
     if (tab === activeTab) return;
     
+    // Animate tab indicator
+    Animated.spring(tabIndicatorAnim, {
+      toValue: tab === 'login' ? 0 : 1,
+      useNativeDriver: true,
+      tension: 68,
+      friction: 8,
+    }).start();
+    
     // Animate out
     Animated.parallel([
       Animated.timing(fadeAnim, {
@@ -196,7 +206,28 @@ export default function LoginScreen() {
       <View style={styles.formCard}>
         {/* Tabs */}
         <View style={styles.tabsContainer}>
-          <View style={styles.tabs}>
+          <View 
+            style={styles.tabs}
+            onLayout={(event) => {
+              const { width } = event.nativeEvent.layout;
+              tabWidth.current = (width - 6 - 4) / 2; // Total width minus padding and gap
+            }}
+          >
+            <Animated.View
+              style={[
+                styles.tabIndicator,
+                {
+                  transform: [
+                    {
+                      translateX: tabIndicatorAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0, tabWidth.current + 4], // tab width + gap
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            />
             <TouchableOpacity
               style={[styles.tab, activeTab === 'login' && styles.tabActive]}
               onPress={() => handleTabSwitch('login')}
@@ -253,7 +284,6 @@ export default function LoginScreen() {
                   if (errors.password) setErrors({ ...errors, password: undefined });
                 }}
                 error={errors.password}
-                isPassword
                 editable={!isLoading}
               />
 
@@ -321,7 +351,6 @@ export default function LoginScreen() {
                   if (signUpErrors.password) setSignUpErrors({ ...signUpErrors, password: undefined });
                 }}
                 error={signUpErrors.password}
-                isPassword
                 editable={!isLoading}
               />
 
@@ -334,7 +363,6 @@ export default function LoginScreen() {
                   if (signUpErrors.confirmPassword) setSignUpErrors({ ...signUpErrors, confirmPassword: undefined });
                 }}
                 error={signUpErrors.confirmPassword}
-                isPassword
                 editable={!isLoading}
               />
 
@@ -362,22 +390,24 @@ export default function LoginScreen() {
               style={[styles.socialButton, styles.googleButton, isLoading && styles.socialButtonDisabled]}
               onPress={handleGoogleAuth}
               disabled={isLoading}
-              activeOpacity={0.8}
+              activeOpacity={0.7}
             >
-              <AntDesign name="google" size={24} color="black" />
+              <AntDesign name="google" size={40} color="#0d98ba" />
             </TouchableOpacity>
 
             <TouchableOpacity
               style={[styles.socialButton, styles.facebookButton, isLoading && styles.socialButtonDisabled]}
               onPress={handleFacebookAuth}
               disabled={isLoading}
-              activeOpacity={0.8}
+              activeOpacity={0.7}
             >
-              <Entypo name="facebook" size={24} color="blue" />
+              <Entypo name="facebook" size={40} color="#0d98ba" />
             </TouchableOpacity>
           </View>
         </Animated.View>
       </View>
+      {/* Bottom filler to cover any remaining space */}
+      <View style={styles.bottomFiller} />
     </ScrollView>
     </>
   );
@@ -390,12 +420,13 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 30,
+    paddingBottom: 0,
   },
   header: {
     paddingTop: 60,
     paddingHorizontal: 24,
     paddingBottom: 40,
+    backgroundColor: '#0d98ba',
   },
   logoContainer: {
     flexDirection: 'row',
@@ -437,8 +468,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#f3f4f6',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
     paddingTop: 8,
     paddingHorizontal: 24,
+    paddingBottom: 100,
   },
   tabsContainer: {
     marginBottom: 24,
@@ -450,16 +484,16 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     padding: 3,
     gap: 4,
+    position: 'relative',
   },
-  tab: {
-    flex: 1,
-    paddingVertical: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 15,
-  },
-  tabActive: {
+  tabIndicator: {
+    position: 'absolute',
+    top: 3,
+    bottom: 3,
+    left: 3,
+    width: '50%',
     backgroundColor: '#fff',
+    borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -468,6 +502,17 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 3,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 15,
+    zIndex: 1,
+  },
+  tabActive: {
+    backgroundColor: 'transparent',
   },
   tabText: {
     fontSize: 16,
@@ -514,70 +559,32 @@ const styles = StyleSheet.create({
   socialButtonsRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 16,
+    gap: 20,
     marginBottom: 20,
   },
   socialButton: {
-    width: 60,
-    height: 60,
-    borderRadius: 12,
+    width: 70,
+    height: 70,
+    borderRadius: 16,
     backgroundColor: '#fff',
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#e5e7eb',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
   },
   socialButtonDisabled: {
-    opacity: 0.6,
+    opacity: 0.5,
   },
   googleButton: {
     backgroundColor: '#fff',
+    borderColor: '#e5e7eb',
   },
   facebookButton: {
     backgroundColor: '#fff',
+    borderColor: '#e5e7eb',
   },
-  googleIconContainer: {
-    width: 32,
-    height: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  googleIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#fff',
-    borderWidth: 2.5,
-    borderColor: '#4285f4',
-    justifyContent: 'center',
-    alignItems: 'center',
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  googleGContainer: {
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  googleG: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#4285f4',
-    lineHeight: 22,
-  },
-  facebookIcon: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#fff',
-    fontFamily: 'Arial',
+  bottomFiller: {
+    backgroundColor: '#f3f4f6',
+    height: 100,
   },
 });
