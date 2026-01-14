@@ -1,240 +1,499 @@
-import { StyleSheet, ScrollView, View, Text, TouchableOpacity } from 'react-native';
+import React from 'react';
+import {
+  StyleSheet,
+  ScrollView,
+  View,
+  Text,
+  TouchableOpacity,
+  StatusBar,
+  Platform,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { useAuth } from '../../auth/AuthContext';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+
+// Theme colors based on design specification
+const COLORS = {
+  primary: '#0d98ba',
+  white: '#FFFFFF',
+  black: '#000000',
+  lightGray: '#F5F5F5',
+  mediumGray: '#666666',
+  borderGray: '#E0E0E0',
+  background: '#F5F5F5',
+  orange: '#FF6B35',
+  orangeLight: '#FFF3E0',
+  darkTeal: '#0a7a94',
+};
+
+// Mock data for recent comparisons
+const recentComparisons = [
+  {
+    id: '1',
+    title: 'U of Toronto vs. UBC',
+    subtitle: 'Programs & Costs',
+    color1: COLORS.primary,
+    color2: '#1a5f4a',
+  },
+  {
+    id: '2',
+    title: "King's College vs. UCL",
+    subtitle: 'Rankings & Life',
+    color1: COLORS.darkTeal,
+    color2: '#2d4a5e',
+  },
+];
+
+// Mock data for upcoming deadlines
+const upcomingDeadlines = [
+  {
+    id: '1',
+    title: 'Fall Semester Application',
+    dueText: 'Due in 3 days',
+    month: 'OCT',
+    day: '15',
+  },
+  {
+    id: '2',
+    title: 'Scholarship Deadline',
+    dueText: 'Due in 1 week',
+    month: 'OCT',
+    day: '20',
+  },
+];
+
+// Header Component
+const Header = () => {
+  const router = useRouter();
+
+  return (
+    <View style={styles.header}>
+      <View style={styles.headerLeft}>
+        <View style={styles.logoContainer}>
+          <MaterialIcons name="public" size={24} color={COLORS.primary} />
+        </View>
+        <Text style={styles.appName}>StudyAbroad</Text>
+      </View>
+      <TouchableOpacity
+        style={styles.notificationButton}
+        onPress={() => {}}
+        activeOpacity={0.7}
+      >
+        <MaterialIcons name="notifications-none" size={26} color={COLORS.black} />
+      </TouchableOpacity>
+    </View>
+  );
+};
+
+// Hero Banner Component
+const HeroBanner = () => {
+  const router = useRouter();
+
+  return (
+    <View style={styles.heroBanner}>
+      <View style={styles.heroIconContainer}>
+        <MaterialIcons name="flight" size={24} color={COLORS.white} />
+      </View>
+      <Text style={styles.heroTitle}>Start Your Journey</Text>
+      <Text style={styles.heroSubtitle}>Find your dream university today</Text>
+      <TouchableOpacity
+        style={styles.heroButton}
+        onPress={() => router.push('/compare')}
+        activeOpacity={0.9}
+      >
+        <Text style={styles.heroButtonText}>Explore Now</Text>
+        <MaterialIcons name="arrow-forward" size={18} color={COLORS.primary} />
+      </TouchableOpacity>
+    </View>
+  );
+};
+
+// Section Header Component
+interface SectionHeaderProps {
+  title: string;
+  showSeeAll?: boolean;
+  onSeeAll?: () => void;
+}
+
+const SectionHeader: React.FC<SectionHeaderProps> = ({
+  title,
+  showSeeAll = false,
+  onSeeAll,
+}) => (
+  <View style={styles.sectionHeader}>
+    <Text style={styles.sectionTitle}>{title}</Text>
+    {showSeeAll && (
+      <TouchableOpacity onPress={onSeeAll} activeOpacity={0.7}>
+        <Text style={styles.seeAllText}>See All</Text>
+      </TouchableOpacity>
+    )}
+  </View>
+);
+
+// Comparison Card Component
+interface ComparisonCardProps {
+  title: string;
+  subtitle: string;
+  color1: string;
+  color2: string;
+  onPress: () => void;
+}
+
+const ComparisonCard: React.FC<ComparisonCardProps> = ({
+  title,
+  subtitle,
+  color1,
+  color2,
+  onPress,
+}) => (
+  <TouchableOpacity
+    style={styles.comparisonCard}
+    onPress={onPress}
+    activeOpacity={0.7}
+  >
+    <View style={styles.comparisonIconsContainer}>
+      <View style={[styles.comparisonIcon, { backgroundColor: color1, zIndex: 2 }]}>
+        <MaterialIcons name="account-balance" size={18} color={COLORS.white} />
+      </View>
+      <View
+        style={[
+          styles.comparisonIcon,
+          styles.comparisonIconOverlap,
+          { backgroundColor: color2, zIndex: 1 },
+        ]}
+      >
+        <MaterialIcons name="school" size={18} color={COLORS.white} />
+      </View>
+    </View>
+    <View style={styles.comparisonContent}>
+      <Text style={styles.comparisonTitle}>{title}</Text>
+      <Text style={styles.comparisonSubtitle}>{subtitle}</Text>
+    </View>
+    <MaterialIcons name="chevron-right" size={24} color={COLORS.mediumGray} />
+  </TouchableOpacity>
+);
+
+// Deadline Card Component
+interface DeadlineCardProps {
+  title: string;
+  dueText: string;
+  month: string;
+  day: string;
+  onPress: () => void;
+}
+
+const DeadlineCard: React.FC<DeadlineCardProps> = ({
+  title,
+  dueText,
+  month,
+  day,
+  onPress,
+}) => (
+  <TouchableOpacity
+    style={styles.deadlineCard}
+    onPress={onPress}
+    activeOpacity={0.7}
+  >
+    <View style={styles.dateBadge}>
+      <Text style={styles.dateMonth}>{month}</Text>
+      <Text style={styles.dateDay}>{day}</Text>
+    </View>
+    <View style={styles.deadlineContent}>
+      <Text style={styles.deadlineTitle}>{title}</Text>
+      <View style={styles.dueContainer}>
+        <MaterialIcons name="schedule" size={14} color={COLORS.orange} />
+        <Text style={styles.dueText}>{dueText}</Text>
+      </View>
+    </View>
+  </TouchableOpacity>
+);
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { user } = useAuth();
-
-  const features = [
-    {
-      title: 'Compare Cities',
-      description: 'Compare living costs and quality of life across different study destinations',
-      icon: '🌍',
-      route: '/compare'
-    },
-    {
-      title: 'Budget Planning',
-      description: 'Plan your study abroad budget with detailed cost breakdowns',
-      icon: '💰',
-      route: '/budget'
-    },
-    {
-      title: 'Plan Journey',
-      description: 'Track your study abroad application journey step by step',
-      icon: '✈️',
-      route: '/plan-journey'
-    },
-    {
-      title: 'Scholarships',
-      description: 'Find and apply for scholarships that match your profile',
-      icon: '🎓',
-      route: '/scholarships'
-    },
-    {
-      title: 'Community',
-      description: 'Connect with other students and share experiences',
-      icon: '👥',
-      route: '/community'
-    }
-  ];
 
   return (
-    <ScrollView style={styles.container}>
-      <ThemedView style={styles.header}>
-        <ThemedText type="title" style={styles.title}>
-          Study Abroad Planning
-        </ThemedText>
-        <ThemedText style={styles.subtitle}>
-          Your comprehensive guide to studying abroad
-        </ThemedText>
-        
-        {!user && (
-          <View style={styles.authButtons}>
-            <TouchableOpacity
-              style={styles.loginButton}
-              onPress={() => router.push('/login')}
-            >
-              <Text style={styles.loginButtonText}>Login</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.signupButton}
-              onPress={() => router.push('/sign-up')}
-            >
-              <Text style={styles.signupButtonText}>Sign Up</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-        
-        {user && (
-          <TouchableOpacity
-            style={styles.profileButton}
-            onPress={() => router.push('/profile')}
-          >
-            <Text style={styles.profileButtonText}>View Profile</Text>
-          </TouchableOpacity>
-        )}
-      </ThemedView>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
 
-      <View style={styles.featuresContainer}>
-        <ThemedText type="subtitle" style={styles.featuresTitle}>
-          Features
-        </ThemedText>
-        {features.map((feature, index) => (
-          <TouchableOpacity
-            key={index}
-            style={styles.featureCard}
-            onPress={() => router.push(feature.route as any)}
-          >
-            <Text style={styles.featureIcon}>{feature.icon}</Text>
-            <View style={styles.featureContent}>
-              <Text style={styles.featureTitle}>{feature.title}</Text>
-              <Text style={styles.featureDescription}>{feature.description}</Text>
-            </View>
-          </TouchableOpacity>
-        ))}
-      </View>
+      {/* Header */}
+      <Header />
 
-      <View style={styles.statsContainer}>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>150+</Text>
-          <Text style={styles.statLabel}>Universities</Text>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Hero Banner */}
+        <HeroBanner />
+
+        {/* Recent Comparisons Section */}
+        <SectionHeader
+          title="Recent Comparisons"
+          showSeeAll
+          onSeeAll={() => router.push('/compare')}
+        />
+        <View style={styles.comparisonsList}>
+          {recentComparisons.map((comparison) => (
+            <ComparisonCard
+              key={comparison.id}
+              title={comparison.title}
+              subtitle={comparison.subtitle}
+              color1={comparison.color1}
+              color2={comparison.color2}
+              onPress={() => router.push('/compare')}
+            />
+          ))}
         </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>50+</Text>
-          <Text style={styles.statLabel}>Countries</Text>
+
+        {/* Upcoming Deadlines Section */}
+        <SectionHeader title="Upcoming Deadlines" />
+        <View style={styles.deadlinesList}>
+          {upcomingDeadlines.map((deadline) => (
+            <DeadlineCard
+              key={deadline.id}
+              title={deadline.title}
+              dueText={deadline.dueText}
+              month={deadline.month}
+              day={deadline.day}
+              onPress={() => router.push('/plan-journey')}
+            />
+          ))}
         </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>1000+</Text>
-          <Text style={styles.statLabel}>Scholarships</Text>
-        </View>
-      </View>
-    </ScrollView>
+
+        {/* Bottom padding for tab bar */}
+        <View style={styles.bottomPadding} />
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: COLORS.white,
+  },
   container: {
     flex: 1,
+    backgroundColor: COLORS.background,
   },
+  scrollContent: {
+    flexGrow: 1,
+  },
+
+  // Header Styles
   header: {
-    padding: 20,
-    paddingTop: 40,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: COLORS.white,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.borderGray,
+    height: 60,
+  },
+  headerLeft: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
-  title: {
-    fontSize: 28,
+  logoContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(13, 152, 186, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  appName: {
+    fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 8,
-    textAlign: 'center',
+    color: COLORS.black,
   },
-  subtitle: {
-    fontSize: 16,
-    opacity: 0.7,
-    textAlign: 'center',
-    marginBottom: 20,
+  notificationButton: {
+    padding: 4,
   },
-  authButtons: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 12,
+
+  // Hero Banner Styles
+  heroBanner: {
+    backgroundColor: COLORS.primary,
+    marginHorizontal: 16,
+    marginTop: 16,
+    borderRadius: 12,
+    padding: 24,
   },
-  loginButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    backgroundColor: '#0d98ba',
-    borderRadius: 8,
-  },
-  loginButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  signupButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: '#0d98ba',
-  },
-  signupButtonText: {
-    color: '#0d98ba',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  profileButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    backgroundColor: '#0d98ba',
-    borderRadius: 8,
-    marginTop: 12,
-  },
-  profileButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  featuresContainer: {
-    padding: 20,
-  },
-  featuresTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
+  heroIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 16,
   },
-  featureCard: {
+  heroTitle: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    color: COLORS.white,
+    marginBottom: 8,
+  },
+  heroSubtitle: {
+    fontSize: 14,
+    color: COLORS.white,
+    opacity: 0.9,
+    marginBottom: 20,
+  },
+  heroButton: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderRadius: 12,
+    alignItems: 'center',
+    backgroundColor: COLORS.white,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 24,
+    alignSelf: 'flex-start',
+    gap: 8,
+  },
+  heroButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
+
+  // Section Header Styles
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    paddingBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: COLORS.black,
+  },
+  seeAllText: {
+    fontSize: 14,
+    color: COLORS.primary,
+    fontWeight: '500',
+  },
+
+  // Comparison Card Styles
+  comparisonsList: {
+    paddingHorizontal: 16,
+  },
+  comparisonCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.white,
+    borderRadius: 10,
     padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    marginBottom: 10,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
   },
-  featureIcon: {
-    fontSize: 40,
-    marginRight: 16,
+  comparisonIconsContainer: {
+    flexDirection: 'row',
+    marginRight: 14,
   },
-  featureContent: {
+  comparisonIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  comparisonIconOverlap: {
+    marginLeft: -12,
+  },
+  comparisonContent: {
     flex: 1,
   },
-  featureTitle: {
-    fontSize: 18,
+  comparisonTitle: {
+    fontSize: 15,
     fontWeight: '600',
+    color: COLORS.black,
     marginBottom: 4,
-    color: '#0d171b',
   },
-  featureDescription: {
-    fontSize: 14,
-    color: '#4c809a',
+  comparisonSubtitle: {
+    fontSize: 13,
+    color: COLORS.mediumGray,
   },
-  statsContainer: {
+
+  // Deadline Card Styles
+  deadlinesList: {
+    paddingHorizontal: 16,
+  },
+  deadlineCard: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    padding: 20,
-    paddingBottom: 40,
-  },
-  statCard: {
     alignItems: 'center',
-    backgroundColor: '#f0f9ff',
-    padding: 20,
-    borderRadius: 12,
-    minWidth: 100,
+    backgroundColor: COLORS.white,
+    borderRadius: 10,
+    padding: 16,
+    marginBottom: 10,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
   },
-  statNumber: {
-    fontSize: 32,
+  dateBadge: {
+    width: 50,
+    height: 50,
+    borderRadius: 8,
+    backgroundColor: COLORS.orangeLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
+  },
+  dateMonth: {
+    fontSize: 11,
     fontWeight: 'bold',
-    color: '#0d98ba',
-    marginBottom: 4,
+    color: COLORS.orange,
+    textTransform: 'uppercase',
   },
-  statLabel: {
-    fontSize: 14,
-    color: '#4c809a',
+  dateDay: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: COLORS.orange,
+  },
+  deadlineContent: {
+    flex: 1,
+  },
+  deadlineTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.black,
+    marginBottom: 6,
+  },
+  dueContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  dueText: {
+    fontSize: 12,
+    color: COLORS.orange,
+  },
+
+  // Bottom Padding
+  bottomPadding: {
+    height: 24,
   },
 });

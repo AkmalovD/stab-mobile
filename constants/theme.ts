@@ -1,30 +1,47 @@
 /**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
+ * Theme constants for Study Abroad Planning App
+ * Colors follow the design specification for a clean, corporate look
  */
 
 import { Platform } from 'react-native';
 
-const tintColorLight = '#0a7ea4';
-const tintColorDark = '#fff';
+// Primary brand color as specified
+const primaryColor = '#0d98ba';
 
 export const Colors = {
   light: {
-    text: '#11181C',
-    background: '#fff',
-    tint: tintColorLight,
-    icon: '#687076',
-    tabIconDefault: '#687076',
-    tabIconSelected: tintColorLight,
+    text: '#000000',
+    background: '#F8F9FA',
+    tint: primaryColor,
+    icon: '#666666',
+    tabIconDefault: '#666666',
+    tabIconSelected: primaryColor,
+    card: '#FFFFFF',
+    border: '#E5E5E5',
+    grayText: '#666666',
   },
   dark: {
     text: '#ECEDEE',
     background: '#151718',
-    tint: tintColorDark,
+    tint: primaryColor,
     icon: '#9BA1A6',
     tabIconDefault: '#9BA1A6',
-    tabIconSelected: tintColorDark,
+    tabIconSelected: primaryColor,
+    card: '#1E2022',
+    border: '#2E3235',
+    grayText: '#9BA1A6',
   },
+};
+
+// App-wide color constants
+export const AppColors = {
+  primary: '#0d98ba',
+  secondary: '#FFFFFF',
+  accent: '#000000',
+  grayText: '#666666',
+  borderGray: '#E5E5E5',
+  background: '#F8F9FA',
+  iconBackground: 'rgba(13, 152, 186, 0.1)',
 };
 
 export const Fonts = Platform.select({
