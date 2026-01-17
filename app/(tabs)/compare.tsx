@@ -228,6 +228,78 @@ const citiesData: City[] = [
       studentFriendly: 8.5,
     },
   },
+  {
+    id: 'madrid',
+    name: 'Madrid',
+    country: 'Spain',
+    image: '',
+    description: 'Spanish capital with rich culture and history',
+    averageCost: 1150,
+    currency: 'EUR',
+    livingCosts: {
+      accommodation: 650,
+      food: 300,
+      transportation: 55,
+      entertainment: 140,
+      utilities: 95,
+      education: 1200,
+    },
+    metadata: {
+      population: '3.3 million',
+      language: 'Spanish',
+      climate: 'Mediterranean',
+      safetyRating: 8.0,
+      studentFriendly: 8.6,
+    },
+  },
+  {
+    id: 'rome',
+    name: 'Rome',
+    country: 'Italy',
+    image: '',
+    description: 'Ancient city with renowned universities',
+    averageCost: 1250,
+    currency: 'EUR',
+    livingCosts: {
+      accommodation: 750,
+      food: 350,
+      transportation: 65,
+      entertainment: 150,
+      utilities: 110,
+      education: 1000,
+    },
+    metadata: {
+      population: '2.8 million',
+      language: 'Italian',
+      climate: 'Mediterranean',
+      safetyRating: 7.5,
+      studentFriendly: 8.3,
+    },
+  },
+  {
+    id: 'lisbon',
+    name: 'Lisbon',
+    country: 'Portugal',
+    image: '',
+    description: 'Coastal city with growing tech scene',
+    averageCost: 950,
+    currency: 'EUR',
+    livingCosts: {
+      accommodation: 550,
+      food: 250,
+      transportation: 45,
+      entertainment: 120,
+      utilities: 85,
+      education: 1100,
+    },
+    metadata: {
+      population: '505,000',
+      language: 'Portuguese',
+      climate: 'Mediterranean',
+      safetyRating: 8.5,
+      studentFriendly: 8.7,
+    },
+  },
 ];
 
 // City images mapping
@@ -240,6 +312,9 @@ const cityImages: Record<string, any> = {
   'barcelona': { uri: 'https://images.unsplash.com/photo-1583422409516-2895a77efded?w=200&h=200&fit=crop' },
   'munich': { uri: 'https://images.unsplash.com/photo-1595867818082-083862f3d630?w=200&h=200&fit=crop' },
   'prague': { uri: 'https://images.unsplash.com/photo-1541849546-216549ae216d?w=200&h=200&fit=crop' },
+  'madrid': { uri: 'https://images.unsplash.com/photo-1539037116277-4db20889f2d4?w=200&h=200&fit=crop' },
+  'rome': { uri: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=200&h=200&fit=crop' },
+  'lisbon': { uri: 'https://images.unsplash.com/photo-1585208798174-6cedd86e019a?w=200&h=200&fit=crop' },
 };
 
 // ============================================================================
@@ -249,9 +324,10 @@ interface CityCardProps {
   city: City;
   isSelected: boolean;
   onSelect: () => void;
+  isGridView?: boolean;
 }
 
-const CityCard: React.FC<CityCardProps> = ({ city, isSelected, onSelect }) => {
+const CityCard: React.FC<CityCardProps> = ({ city, isSelected, onSelect, isGridView = false }) => {
   const handlePress = useCallback(() => {
     if (Platform.OS !== 'web') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -261,7 +337,10 @@ const CityCard: React.FC<CityCardProps> = ({ city, isSelected, onSelect }) => {
 
   return (
     <TouchableOpacity
-      style={[styles.cityCard, isSelected && styles.cityCardSelected]}
+      style={[
+        isGridView ? styles.cityCardGrid : styles.cityCard,
+        isSelected && styles.cityCardSelected
+      ]}
       onPress={handlePress}
       activeOpacity={0.7}
     >
@@ -843,22 +922,37 @@ export default function CompareScreen() {
           )}
         </View>
 
-        {/* Cities Horizontal List */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.citiesScrollContent}
-          style={styles.citiesScroll}
-        >
-          {displayedCities.map(city => (
-            <CityCard
-              key={city.id}
-              city={city}
-              isSelected={selectedCities.includes(city.id)}
-              onSelect={() => handleCitySelect(city.id)}
-            />
-          ))}
-        </ScrollView>
+        {/* Cities - Horizontal scroll or Expanded Grid */}
+        {!showAllCities ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.citiesScrollContent}
+            style={styles.citiesScroll}
+          >
+            {displayedCities.map(city => (
+              <CityCard
+                key={city.id}
+                city={city}
+                isSelected={selectedCities.includes(city.id)}
+                onSelect={() => handleCitySelect(city.id)}
+                isGridView={false}
+              />
+            ))}
+          </ScrollView>
+        ) : (
+          <View style={styles.citiesGrid}>
+            {filteredCities.map(city => (
+              <CityCard
+                key={city.id}
+                city={city}
+                isSelected={selectedCities.includes(city.id)}
+                onSelect={() => handleCitySelect(city.id)}
+                isGridView={true}
+              />
+            ))}
+          </View>
+        )}
 
         {/* Show More/Less Button */}
         {filteredCities.length > INITIAL_DISPLAY_COUNT && (
@@ -866,8 +960,13 @@ export default function CompareScreen() {
             style={styles.showMoreButton}
             onPress={() => setShowAllCities(!showAllCities)}
           >
+            <Ionicons
+              name={showAllCities ? 'grid-outline' : 'apps-outline'}
+              size={18}
+              color={COLORS.primary}
+            />
             <Text style={styles.showMoreButtonText}>
-              {showAllCities ? 'Show Less' : `Show All ${filteredCities.length} Cities`}
+              {showAllCities ? 'Collapse View' : `Show All ${filteredCities.length} Cities`}
             </Text>
             <Ionicons
               name={showAllCities ? 'chevron-up' : 'chevron-down'}
@@ -1085,8 +1184,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     gap: 14,
   },
+  // City Grid Styles (expanded view)
+  citiesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    justifyContent: 'flex-start',
+  },
+  // City card for horizontal scroll
   cityCard: {
     width: 110,
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: 16,
+    padding: 12,
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    alignItems: 'center',
+  },
+  // City card for grid view
+  cityCardGrid: {
+    width: '30.5%',
     backgroundColor: COLORS.cardBackground,
     borderRadius: 16,
     padding: 12,
