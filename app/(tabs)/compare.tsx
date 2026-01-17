@@ -3,7 +3,6 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
-  Dimensions,
   Platform,
   ScrollView,
   StyleSheet,
@@ -12,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import Svg, { Circle, G } from 'react-native-svg';
 
 // ============================================================================
 // CONSTANTS & THEME
@@ -383,88 +383,141 @@ const CostBreakdown: React.FC<CostBreakdownProps> = ({ cities }) => {
 };
 
 // ============================================================================
-// VISUAL COMPARISON COMPONENT
+// VISUAL COMPARISON COMPONENT - PIE CHART CARDS
 // ============================================================================
+
+// Pie chart category config
+const pieCategories: { key: keyof CityLivingCosts; label: string; color: string }[] = [
+  { key: 'accommodation', label: 'Housing', color: '#3B82F6' },
+  { key: 'food', label: 'Food', color: '#10B981' },
+  { key: 'transportation', label: 'Transport', color: '#8B5CF6' },
+  { key: 'entertainment', label: 'Entertainment', color: '#F59E0B' },
+  { key: 'utilities', label: 'Utilities', color: '#6B7280' },
+];
+
+interface DonutChartProps {
+  data: { value: number; color: string }[];
+  size: number;
+  strokeWidth: number;
+  centerContent: React.ReactNode;
+}
+
+const DonutChart: React.FC<DonutChartProps> = ({ data, size, strokeWidth, centerContent }) => {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const total = data.reduce((sum, item) => sum + item.value, 0);
+  
+  let accumulatedOffset = 0;
+  
+  return (
+    <View style={{ width: size, height: size, position: 'relative' }}>
+      <Svg width={size} height={size}>
+        <G rotation="-90" origin={`${size / 2}, ${size / 2}`}>
+          {data.map((item, index) => {
+            const percentage = item.value / total;
+            const strokeDasharray = `${circumference * percentage} ${circumference * (1 - percentage)}`;
+            const strokeDashoffset = -accumulatedOffset;
+            accumulatedOffset += circumference * percentage;
+            
+            return (
+              <Circle
+                key={index}
+                cx={size / 2}
+                cy={size / 2}
+                r={radius}
+                stroke={item.color}
+                strokeWidth={strokeWidth}
+                fill="transparent"
+                strokeDasharray={strokeDasharray}
+                strokeDashoffset={strokeDashoffset}
+                strokeLinecap="butt"
+              />
+            );
+          })}
+        </G>
+      </Svg>
+      <View style={[StyleSheet.absoluteFill, { justifyContent: 'center', alignItems: 'center' }]}>
+        {centerContent}
+      </View>
+    </View>
+  );
+};
+
+interface CityPieCardProps {
+  city: City;
+}
+
+const CityPieCard: React.FC<CityPieCardProps> = ({ city }) => {
+  const chartSize = 150;
+  
+  const getMonthlyTotal = () => {
+    return pieCategories.reduce((sum, cat) => sum + city.livingCosts[cat.key], 0);
+  };
+  
+  const total = getMonthlyTotal();
+  
+  const chartData = pieCategories.map(cat => ({
+    value: city.livingCosts[cat.key],
+    color: cat.color,
+  }));
+  
+  return (
+    <View style={styles.pieCard}>
+      {/* Donut Chart */}
+      <View style={styles.pieChartWrapper}>
+        <DonutChart
+          data={chartData}
+          size={chartSize}
+          strokeWidth={22}
+          centerContent={
+            <View style={styles.pieCenterContent}>
+              <Text style={styles.pieTotalAmount}>€{total.toLocaleString()}</Text>
+              <Text style={styles.pieTotalLabel}>per month</Text>
+            </View>
+          }
+        />
+      </View>
+      
+      {/* City Info */}
+      <View style={styles.pieCityInfo}>
+        <Text style={styles.pieCityName}>{city.name}</Text>
+        <Text style={styles.pieCityCountry}>{city.country}</Text>
+      </View>
+      
+      {/* Legend/Breakdown */}
+      <View style={styles.pieLegend}>
+        {pieCategories.map(cat => {
+          const value = city.livingCosts[cat.key];
+          const percentage = Math.round((value / total) * 100);
+          return (
+            <View key={cat.key} style={styles.pieLegendRow}>
+              <View style={styles.pieLegendLeft}>
+                <View style={[styles.pieLegendDot, { backgroundColor: cat.color }]} />
+                <Text style={styles.pieLegendLabel}>{cat.label}</Text>
+              </View>
+              <View style={styles.pieLegendRight}>
+                <Text style={styles.pieLegendValue}>€{value}</Text>
+                <Text style={styles.pieLegendPercent}>{percentage}%</Text>
+              </View>
+            </View>
+          );
+        })}
+      </View>
+    </View>
+  );
+};
+
 interface VisualComparisonProps {
   cities: City[];
 }
 
 const VisualComparison: React.FC<VisualComparisonProps> = ({ cities }) => {
-  const screenWidth = Dimensions.get('window').width - 80;
-  const barWidth = Math.min(screenWidth / cities.length - 16, 120);
-
-  const getMonthlyTotal = (city: City) => {
-    return Object.entries(city.livingCosts)
-      .filter(([key]) => key !== 'education')
-      .reduce((sum, [, val]) => sum + val, 0);
-  };
-
-  const maxTotal = Math.max(...cities.map(getMonthlyTotal));
-
-  const barColors = ['#0d98ba', '#4ade80', '#f59e0b', '#ef4444'];
-
   return (
     <View style={styles.visualComparison}>
-      <Text style={styles.visualTitle}>Monthly Living Cost Comparison</Text>
-      
-      {/* Bar Chart */}
-      <View style={styles.barChartContainer}>
-        {cities.map((city, index) => {
-          const total = getMonthlyTotal(city);
-          const barHeight = (total / maxTotal) * 180;
-          return (
-            <View key={city.id} style={styles.barColumn}>
-              <Text style={styles.barValue}>€{total.toLocaleString()}</Text>
-              <View style={styles.barWrapper}>
-                <View
-                  style={[
-                    styles.bar,
-                    {
-                      height: barHeight,
-                      width: barWidth,
-                      backgroundColor: barColors[index % barColors.length],
-                    },
-                  ]}
-                />
-              </View>
-              <Text style={styles.barLabel} numberOfLines={1}>
-                {city.name}
-              </Text>
-            </View>
-          );
-        })}
-      </View>
-
-      {/* Quality Metrics */}
-      <View style={styles.metricsSection}>
-        <Text style={styles.metricsTitle}>Quality Metrics</Text>
-        {['safetyRating', 'studentFriendly'].map(metric => (
-          <View key={metric} style={styles.metricRow}>
-            <Text style={styles.metricLabel}>
-              {metric === 'safetyRating' ? 'Safety Rating' : 'Student Friendly'}
-            </Text>
-            <View style={styles.metricBars}>
-              {cities.map((city, index) => {
-                const value = city.metadata[metric as keyof typeof city.metadata] as number;
-                return (
-                  <View key={city.id} style={styles.metricBarContainer}>
-                    <View style={styles.metricBarTrack}>
-                      <View
-                        style={[
-                          styles.metricBarFill,
-                          {
-                            width: `${value * 10}%`,
-                            backgroundColor: barColors[index % barColors.length],
-                          },
-                        ]}
-                      />
-                    </View>
-                    <Text style={styles.metricValue}>{value}/10</Text>
-                  </View>
-                );
-              })}
-            </View>
-          </View>
+      {/* Pie Chart Cards */}
+      <View style={styles.pieCardsContainer}>
+        {cities.slice(0, 4).map(city => (
+          <CityPieCard key={city.id} city={city} />
         ))}
       </View>
     </View>
@@ -1174,93 +1227,102 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
   },
 
-  // Visual Comparison Styles
+  // Visual Comparison Styles - Pie Chart Cards
   visualComparison: {
     marginTop: 8,
   },
-  visualTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-    marginBottom: 20,
-    textAlign: 'center',
+  pieCardsContainer: {
+    gap: 16,
   },
-  barChartContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'flex-end',
-    height: 240,
-    paddingBottom: 40,
-    marginBottom: 24,
+  pieCard: {
+    width: '100%',
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: 20,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
-  barColumn: {
+  pieChartWrapper: {
     alignItems: 'center',
-  },
-  barValue: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-    marginBottom: 8,
-  },
-  barWrapper: {
-    height: 180,
-    justifyContent: 'flex-end',
-  },
-  bar: {
-    borderRadius: 8,
-    minHeight: 20,
-  },
-  barLabel: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: COLORS.textSecondary,
-    marginTop: 8,
-    maxWidth: 70,
-    textAlign: 'center',
-  },
-  metricsSection: {
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-    paddingTop: 20,
-  },
-  metricsTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-    marginBottom: 16,
-  },
-  metricRow: {
     marginBottom: 20,
   },
-  metricLabel: {
+  pieCenterContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pieTotalAmount: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#3B82F6',
+    letterSpacing: -0.5,
+  },
+  pieTotalLabel: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  pieCityInfo: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  pieCityName: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+    marginBottom: 4,
+  },
+  pieCityCountry: {
     fontSize: 14,
     color: COLORS.textSecondary,
-    marginBottom: 10,
   },
-  metricBars: {
-    gap: 8,
+  pieLegend: {
+    gap: 14,
   },
-  metricBarContainer: {
+  pieLegendRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  pieLegendLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-  },
-  metricBarTrack: {
     flex: 1,
-    height: 8,
-    backgroundColor: COLORS.border,
-    borderRadius: 4,
-    overflow: 'hidden',
   },
-  metricBarFill: {
-    height: '100%',
-    borderRadius: 4,
+  pieLegendDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
   },
-  metricValue: {
-    fontSize: 13,
-    fontWeight: '600',
+  pieLegendLabel: {
+    fontSize: 15,
     color: COLORS.textPrimary,
-    width: 45,
+  },
+  pieLegendRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  pieLegendValue: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+  },
+  pieLegendPercent: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    minWidth: 40,
     textAlign: 'right',
   },
 
