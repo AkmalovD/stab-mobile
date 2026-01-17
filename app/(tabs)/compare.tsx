@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
+  Image,
   Platform,
   ScrollView,
   StyleSheet,
@@ -229,15 +230,16 @@ const citiesData: City[] = [
   },
 ];
 
-// Country flags mapping
-const countryFlags: Record<string, string> = {
-  'United Kingdom': '🇬🇧',
-  'Germany': '🇩🇪',
-  'France': '🇫🇷',
-  'Netherlands': '🇳🇱',
-  'Austria': '🇦🇹',
-  'Spain': '🇪🇸',
-  'Czech Republic': '🇨🇿',
+// City images mapping
+const cityImages: Record<string, any> = {
+  'london': { uri: 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=200&h=200&fit=crop' },
+  'berlin': { uri: 'https://images.unsplash.com/photo-1560969184-10fe8719e047?w=200&h=200&fit=crop' },
+  'paris': { uri: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=200&h=200&fit=crop' },
+  'amsterdam': { uri: 'https://images.unsplash.com/photo-1534351590666-13e3e96b5017?w=200&h=200&fit=crop' },
+  'vienna': { uri: 'https://images.unsplash.com/photo-1516550893923-42d28e5677af?w=200&h=200&fit=crop' },
+  'barcelona': { uri: 'https://images.unsplash.com/photo-1583422409516-2895a77efded?w=200&h=200&fit=crop' },
+  'munich': { uri: 'https://images.unsplash.com/photo-1595867818082-083862f3d630?w=200&h=200&fit=crop' },
+  'prague': { uri: 'https://images.unsplash.com/photo-1541849546-216549ae216d?w=200&h=200&fit=crop' },
 };
 
 // ============================================================================
@@ -264,18 +266,25 @@ const CityCard: React.FC<CityCardProps> = ({ city, isSelected, onSelect }) => {
       activeOpacity={0.7}
     >
       <View style={styles.cityCardContent}>
-        <Text style={styles.cityFlag}>{countryFlags[city.country] || '🌍'}</Text>
+        {/* City Image */}
+        <View style={styles.cityImageWrapper}>
+          <Image
+            source={cityImages[city.id] || { uri: 'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=200&h=200&fit=crop' }}
+            style={styles.cityImage}
+          />
+          {isSelected && (
+            <View style={styles.checkBadge}>
+              <Ionicons name="checkmark" size={14} color="#fff" />
+            </View>
+          )}
+        </View>
+        {/* City Info */}
         <View style={styles.cityInfo}>
-          <Text style={[styles.cityName, isSelected && styles.cityNameSelected]}>
+          <Text style={[styles.cityName, isSelected && styles.cityNameSelected]} numberOfLines={1}>
             {city.name}
           </Text>
-          <Text style={styles.cityCountry}>{city.country}</Text>
+          <Text style={styles.cityCountry} numberOfLines={1}>{city.country}</Text>
         </View>
-        {isSelected && (
-          <View style={styles.checkIcon}>
-            <Ionicons name="checkmark-circle" size={24} color={COLORS.primary} />
-          </View>
-        )}
       </View>
     </TouchableOpacity>
   );
@@ -834,8 +843,13 @@ export default function CompareScreen() {
           )}
         </View>
 
-        {/* Cities Grid */}
-        <View style={styles.citiesGrid}>
+        {/* Cities Horizontal List */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.citiesScrollContent}
+          style={styles.citiesScroll}
+        >
           {displayedCities.map(city => (
             <CityCard
               key={city.id}
@@ -844,7 +858,7 @@ export default function CompareScreen() {
               onSelect={() => handleCitySelect(city.id)}
             />
           ))}
-        </View>
+        </ScrollView>
 
         {/* Show More/Less Button */}
         {filteredCities.length > INITIAL_DISPLAY_COUNT && (
@@ -1062,50 +1076,72 @@ const styles = StyleSheet.create({
     padding: 4,
   },
 
-  // City Grid Styles
-  citiesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
+  // City Horizontal Scroll Styles
+  citiesScroll: {
+    marginHorizontal: -24,
+    marginBottom: 4,
+  },
+  citiesScrollContent: {
+    paddingHorizontal: 24,
+    gap: 14,
   },
   cityCard: {
-    width: '48%',
+    width: 110,
     backgroundColor: COLORS.cardBackground,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16,
+    padding: 12,
     borderWidth: 2,
     borderColor: COLORS.border,
+    alignItems: 'center',
   },
   cityCardSelected: {
     borderColor: COLORS.primary,
     backgroundColor: COLORS.primaryLight,
   },
   cityCardContent: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     alignItems: 'center',
+    gap: 10,
   },
-  cityFlag: {
-    fontSize: 28,
-    marginRight: 12,
+  cityImageWrapper: {
+    position: 'relative',
+  },
+  cityImage: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: COLORS.sectionBackground,
+  },
+  checkBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.cardBackground,
   },
   cityInfo: {
-    flex: 1,
+    alignItems: 'center',
   },
   cityName: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '700',
     color: COLORS.textPrimary,
-    marginBottom: 2,
+    textAlign: 'center',
   },
   cityNameSelected: {
     color: COLORS.primary,
   },
   cityCountry: {
-    fontSize: 13,
+    fontSize: 11,
     color: COLORS.textSecondary,
-  },
-  checkIcon: {
-    marginLeft: 8,
+    textAlign: 'center',
+    marginTop: 2,
   },
 
   // Show More Button
