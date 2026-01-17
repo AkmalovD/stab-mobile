@@ -101,9 +101,71 @@ const HeroBanner = () => {
         onPress={() => router.push('/compare')}
         activeOpacity={0.9}
       >
-        <Text style={styles.heroButtonText}>Explore Now</Text>
+        <Text style={styles.heroButtonText}>Compare Cities</Text>
         <MaterialIcons name="arrow-forward" size={18} color={COLORS.primary} />
       </TouchableOpacity>
+    </View>
+  );
+};
+
+// Quick Actions Component
+const QuickActions = () => {
+  const router = useRouter();
+
+  const actions = [
+    {
+      id: 'cities',
+      title: 'Compare Cities',
+      subtitle: 'Living costs & lifestyle',
+      icon: 'location-city',
+      color: COLORS.primary,
+      route: '/compare',
+    },
+    {
+      id: 'budget',
+      title: 'Budget Planner',
+      subtitle: 'Plan your expenses',
+      icon: 'account-balance-wallet',
+      color: '#22c55e',
+      route: '/budget',
+    },
+    {
+      id: 'scholarships',
+      title: 'Scholarships',
+      subtitle: 'Find funding',
+      icon: 'school',
+      color: '#f59e0b',
+      route: '/scholarships',
+    },
+    {
+      id: 'community',
+      title: 'Community',
+      subtitle: 'Connect with others',
+      icon: 'people',
+      color: '#8b5cf6',
+      route: '/community',
+    },
+  ];
+
+  return (
+    <View style={styles.quickActionsContainer}>
+      <Text style={styles.quickActionsTitle}>Quick Actions</Text>
+      <View style={styles.quickActionsGrid}>
+        {actions.map((action) => (
+          <TouchableOpacity
+            key={action.id}
+            style={styles.quickActionCard}
+            onPress={() => router.push(action.route as any)}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.quickActionIcon, { backgroundColor: `${action.color}15` }]}>
+              <MaterialIcons name={action.icon as any} size={24} color={action.color} />
+            </View>
+            <Text style={styles.quickActionTitle}>{action.title}</Text>
+            <Text style={styles.quickActionSubtitle}>{action.subtitle}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
     </View>
   );
 };
@@ -225,6 +287,9 @@ export default function HomeScreen() {
       >
         {/* Hero Banner */}
         <HeroBanner />
+
+        {/* Quick Actions */}
+        <QuickActions />
 
         {/* Recent Comparisons Section */}
         <SectionHeader
@@ -490,6 +555,58 @@ const styles = StyleSheet.create({
   dueText: {
     fontSize: 12,
     color: COLORS.orange,
+  },
+
+  // Quick Actions Styles
+  quickActionsContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 20,
+  },
+  quickActionsTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: COLORS.black,
+    marginBottom: 12,
+  },
+  quickActionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  quickActionCard: {
+    width: '47%',
+    backgroundColor: COLORS.white,
+    borderRadius: 12,
+    padding: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  quickActionIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  quickActionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.black,
+    marginBottom: 2,
+  },
+  quickActionSubtitle: {
+    fontSize: 12,
+    color: COLORS.mediumGray,
   },
 
   // Bottom Padding
